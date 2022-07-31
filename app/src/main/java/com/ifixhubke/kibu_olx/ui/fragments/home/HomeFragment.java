@@ -1,6 +1,7 @@
 package com.ifixhubke.kibu_olx.ui.fragments.home;
 
 
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -44,11 +45,16 @@ public class HomeFragment extends Fragment implements ItemClickListener, Materia
 
     FragmentHomeBinding binding;
     ArrayList<Item> itemsList = new ArrayList<>();
+    private View view;
 
     @Override
     public View onCreateView(@NotNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentHomeBinding.inflate(inflater, container, false);
-        View view = binding.getRoot();
+
+        if (view==null){
+            view = binding.getRoot();
+        }
+
         Timber.d("onCreateView");
 
         binding.allItemsRecyclerview.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -106,7 +112,15 @@ public class HomeFragment extends Fragment implements ItemClickListener, Materia
         });
 
         viewModel.fetchItems().observe(getViewLifecycleOwner(), items -> {
-            if (!items.isEmpty()) {
+            if ((items.isEmpty() || items == null)) {
+
+                binding.imageView2.setVisibility(View.VISIBLE);
+                binding.textView.setVisibility(View.VISIBLE);
+                binding.shimmerFrameLayout.setVisibility(View.GONE);
+
+
+            } else {
+                itemsList = items;
                 Timber.d(items.toString());
                 binding.shimmerFrameLayout.setVisibility(View.GONE);
                 binding.allItemsRecyclerview.setVisibility(View.VISIBLE);
@@ -117,10 +131,6 @@ public class HomeFragment extends Fragment implements ItemClickListener, Materia
                 binding.buttonTryAgain.setVisibility(View.GONE);
                 Collections.reverse(items);
                 initializeRecycler(items);
-            } else {
-                binding.imageView2.setVisibility(View.VISIBLE);
-                binding.textView.setVisibility(View.VISIBLE);
-                binding.shimmerFrameLayout.setVisibility(View.GONE);
             }
         });
 
@@ -197,10 +207,12 @@ public class HomeFragment extends Fragment implements ItemClickListener, Materia
             startActivity(intent);
             return true;
         } else if (item.getItemId() == R.id.rateUsMenu) {
-            String url = "https://github.com/iFix-Hub-KE";
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setData(Uri.parse(url));
-            startActivity(intent);
+            try{
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id="+ requireActivity().getPackageName())));
+            }
+            catch (ActivityNotFoundException e){
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id="+requireActivity().getPackageName())));
+            }
             return true;
         } else if (item.getItemId() == R.id.helpMenu) {
             Navigation.findNavController(requireView()).navigate(R.id.action_homeFragment2_to_helpFeedbackFragment);
